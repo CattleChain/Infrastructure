@@ -1,6 +1,20 @@
 version: '3.5'
 services:
-
+  swagger:
+    image: swaggerapi/swagger-ui
+    container_name: swaggerapi
+    hostname: swagger
+    depends_on:
+      - rest-api
+    networks:
+      - default
+    expose:
+      - "80"
+    environment:
+      - API_URL=/swagger.json
+    restart: always
+    volumes: ["../FIWARE_Cattlechain_Sawtooth_API_Specification/specification.json:/usr/share/nginx/html/swagger.json"]
+        
 # context broker service
   orion:
     image: fiware/orion:2.4.0
@@ -26,6 +40,7 @@ services:
     container_name: fiware-iot-agent
     depends_on:
         - mongo-db
+        - orion
     expose:
         - "4041"
         - "7896"
@@ -220,8 +235,6 @@ services:
 #  volumes 
 volumes:
   mongo-db: ~
-  postgres-db: ~
-  pgadmin: ~
   dist-html:
 
 # network
