@@ -66,18 +66,22 @@ services:
     networks:
         - default
     depends_on:
-        - mongo-db
+        - postgres-db
     expose:
         - "5080"
     ports:
-        - "5051:5051"
+        - "5055:5055"
         - "5080:5080"
     environment:
-        - "CYGNUS_MONGO_HOSTS=mongo-db:27017"
-        - "CYGNUS_MONGO_SERVICE_PORT=5051"
+        - "CYGNUS_POSTGRESQL_HOST=postgres-db"
+        - "CYGNUS_POSTGRESQL_PORT=5432"
+        - "CYGNUS_POSTGRESQL_USER=postgres"
+        - "CYGNUS_POSTGRESQL_PASS=password"
+        - "CYGNUS_POSTGRESQL_ENABLE_CACHE=true"
+        - "CYGNUS_POSTGRESQL_SERVICE_PORT=5055"
         - "CYGNUS_LOG_LEVEL=DEBUG"
         - "CYGNUS_API_PORT=5080"
-        - "CYGNUS_SERVICE_PORT=5051"
+        - "CYGNUS_SERVICE_PORT=5055"
 
 # Shot term history comet
   sth-comet:
@@ -97,7 +101,6 @@ services:
         - DB_URI=mongo-db:27017
         - LOGOPS_LEVEL=DEBUG
 
-  
 # Database
   mongo-db:
     image: mongo:3.6
@@ -112,6 +115,34 @@ services:
     command: --bind_ip_all --smallfiles
     volumes:
       - mongo-db:/data
+
+# postgres cygnus
+  postgres-db:
+    image: postgres:latest
+    hostname: postgres-db
+    container_name: db-postgres
+    expose:
+        - "5432"
+    ports:
+        - "5432:5432"
+    networks:
+        - default
+    environment:
+        - "POSTGRES_PASSWORD=password"
+        - "POSTGRES_USER=postgres"
+        - "POSTGRES_DB=postgres"
+
+# cattlechain ledgerSync
+  cattlechain-ledgersync:
+    container_name: cattlechain_ledgersync
+    build:
+      context: ../FIWARE_Cattlechain_LedgerSync
+    environment:
+      VALIDATOR_URL: tcp://validator:4004
+      CONTEXT_BROKER: http://orion:1026
+    depends_on:
+      - cattlechain-tp
+      - orion
 
 # cattlechain client
   cattlechain-client:
@@ -185,7 +216,7 @@ services:
           --endpoint tcp://validator:8800 \
           --bind component:tcp://eth0:4004 \
           --bind network:tcp://eth0:8800 \
-          --bind consensus:tcp://eth0:5050
+          --bind consensus:tcp://eth0:5100
       "
 # devmode consensus
   devmode-engine:
@@ -193,11 +224,11 @@ services:
     expose:
       - 5050
     ports:
-      - '5050:5050'
+      - '5100:5050'
     container_name: sawtooth-devmode-engine-rust-default
     depends_on:
       - validator
-    entrypoint: devmode-engine-rust --connect tcp://validator:5050
+    entrypoint: devmode-engine-rust --connect tcp://validator:5100
 
 # sawtooth explorer
   rest-api-proxy:
@@ -243,5 +274,5 @@ networks:
     ipam:
       config:
         - subnet: 172.18.1.0/24
-  postgres:
-    driver: bridge
+  # postgres:
+  #   driver: bridge
