@@ -9,7 +9,9 @@ services:
     networks:
       - default
     expose:
-      - "80"
+      - 8080
+    ports:
+      - 8029:8080
     environment:
       - API_URL=/swagger.json
     restart: always
@@ -63,44 +65,51 @@ services:
     image: fiware/cygnus-ngsi:latest
     hostname: cygnus
     container_name: fiware-cygnus
-    networks:
-        - default
-    depends_on:
-        - postgres-db
-    expose:
-        - "5080"
-    ports:
-        - "5055:5055"
-        - "5080:5080"
-    environment:
-        - "CYGNUS_POSTGRESQL_HOST=postgres-db"
-        - "CYGNUS_POSTGRESQL_PORT=5432"
-        - "CYGNUS_POSTGRESQL_USER=postgres"
-        - "CYGNUS_POSTGRESQL_PASS=password"
-        - "CYGNUS_POSTGRESQL_ENABLE_CACHE=true"
-        - "CYGNUS_POSTGRESQL_SERVICE_PORT=5055"
-        - "CYGNUS_LOG_LEVEL=DEBUG"
-        - "CYGNUS_API_PORT=5080"
-        - "CYGNUS_SERVICE_PORT=5055"
-
-# Shot term history comet
-  sth-comet:
-    image: fiware/sth-comet
-    hostname: sth-comet
-    container_name: fiware-sth-comet
     depends_on:
         - mongo-db
     networks:
         - default
+    expose:
+        - "5080"
     ports:
-        - "8666:8666"
+        - "5051:5051"
+        - "5080:5080"
     environment:
-        - STH_HOST=0.0.0.0
-        - STH_PORT=8666
-        - DB_PREFIX=sth_
-        - DB_URI=mongo-db:27017
-        - LOGOPS_LEVEL=DEBUG
+        - "CYGNUS_MONGO_HOSTS=mongo-db:27017"
+        - "CYGNUS_LOG_LEVEL=DEBUG"
+        - "CYGNUS_SERVICE_PORT=5051"
+        - "CYGNUS_API_PORT=5080"
 
+# grafana
+  grafana:
+    image: grafana/grafana
+    depends_on:
+        - crate-db
+    ports:
+        - "3003:3000"
+    environment:
+        - GF_INSTALL_PLUGINS=https://github.com/orchestracities/grafana-map-plugin/archive/master.zip;grafana-map-plugin,grafana-clock-panel,grafana-worldmap-panel
+# time series data quantumleap
+  quantumleap:
+    image: smartsdk/quantumleap
+    hostname: quantumleap
+    ports:
+        - "8668:8668"
+    depends_on:
+        - crate-db
+    environment:
+        - CRATE_HOST=crate-db
+# create db
+  crate-db:
+    image: crate:3.1.2
+    hostname: crate-db
+    ports:
+        - "4200:4200"
+        - "4300:4300"
+    command:
+        crate -Clicense.enterprise=false -Cauth.host_based.enabled=false  -Ccluster.name=democluster
+        -Chttp.cors.enabled=true -Chttp.cors.allow-origin="*"
+  
 # Database
   mongo-db:
     image: mongo:3.6
@@ -115,22 +124,6 @@ services:
     command: --bind_ip_all --smallfiles
     volumes:
       - mongo-db:/data
-
-# postgres cygnus
-  postgres-db:
-    image: postgres:latest
-    hostname: postgres-db
-    container_name: db-postgres
-    expose:
-        - "5432"
-    ports:
-        - "5432:5432"
-    networks:
-        - default
-    environment:
-        - "POSTGRES_PASSWORD=password"
-        - "POSTGRES_USER=postgres"
-        - "POSTGRES_DB=postgres"
 
 # cattlechain ledgerSync
   cattlechain-ledgersync:
@@ -216,7 +209,7 @@ services:
           --endpoint tcp://validator:8800 \
           --bind component:tcp://eth0:4004 \
           --bind network:tcp://eth0:8800 \
-          --bind consensus:tcp://eth0:5100
+          --bind consensus:tcp://eth0:5050
       "
 # devmode consensus
   devmode-engine:
@@ -224,11 +217,11 @@ services:
     expose:
       - 5050
     ports:
-      - '5100:5050'
+      - '5050:5050'
     container_name: sawtooth-devmode-engine-rust-default
     depends_on:
       - validator
-    entrypoint: devmode-engine-rust --connect tcp://validator:5100
+    entrypoint: devmode-engine-rust --connect tcp://validator:5050
 
 # sawtooth explorer
   rest-api-proxy:
