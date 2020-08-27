@@ -40,25 +40,25 @@ services:
         - "CYGNUS_API_PORT=5080"
 
 # time series data quantumleap
-  quantumleap:
-    image: smartsdk/quantumleap
-    hostname: quantumleap
-    ports:
-        - "8668:8668"
-    depends_on:
-        - crate-db
-    environment:
-        - CRATE_HOST=crate-db
-# create db
-  crate-db:
-    image: crate:3.1.2
-    hostname: crate-db
-    ports:
-        - "4200:4200"
-        - "4300:4300"
-    command:
-        crate -Clicense.enterprise=false -Cauth.host_based.enabled=false  -Ccluster.name=democluster
-        -Chttp.cors.enabled=true -Chttp.cors.allow-origin="*"
+#   quantumleap:
+#     image: smartsdk/quantumleap
+#     hostname: quantumleap
+#     ports:
+#         - "8668:8668"
+#     depends_on:
+#         - crate-db
+#     environment:
+#         - CRATE_HOST=crate-db
+# # create db
+#   crate-db:
+#     image: crate:3.1.2
+#     hostname: crate-db
+#     ports:
+#         - "4200:4200"
+#         - "4300:4300"
+#     command:
+#         crate -Clicense.enterprise=false -Cauth.host_based.enabled=false  -Ccluster.name=democluster
+#         -Chttp.cors.enabled=true -Chttp.cors.allow-origin="*"
   
 # Database
   mongo-db:
