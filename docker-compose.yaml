@@ -15,7 +15,7 @@ services:
     environment:
       - API_URL=/swagger.json
     restart: always
-    volumes: ["../FIWARE_Cattlechain_Sawtooth_API_Specification/specification.json:/usr/share/nginx/html/swagger.json"]
+    volumes: ["./specification/specification.json:/usr/share/nginx/html/swagger.json"]
         
 # context broker service
   orion:
