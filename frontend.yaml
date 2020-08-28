@@ -1,6 +1,5 @@
 version: '3.5'
 services:
-  
 # cattlechain client
   cattlechain-client:
     image: singhhp10691/tp_client:latest
@@ -35,16 +34,7 @@ services:
     environment:
       - API_URL=/swagger.json
     restart: always
-    volumes: ["../Sawtooth_API_Specification/specification.json:/usr/share/nginx/html/swagger.json"]
-
-# sawtooth explorer
-  sawtooth-explorer:
-    image: singhhp10691/sawtooth-explorer:latest
-    container_name: sawtooth-explorer
-    expose:
-      - 80
-    ports:
-      - 8002:80
+    volumes: ["./Specification/specification.json:/usr/share/nginx/html/swagger.json"]
 
 #postgres
   postgres:
