@@ -2,9 +2,7 @@ version: '3.5'
 services:
 # tp client
   tp-client:
-    build:
-      context: .
-    container_name: tp_client
+    image: singhhp10691/tp_client:latest
     expose:
       - 3000
     ports:
