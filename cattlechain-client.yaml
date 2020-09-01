@@ -21,20 +21,6 @@ services:
       - DB_PASSWORD=root
       - DB_HOST=postgres
       - DB_PORT=5432
-    
-# swagger client
-  swagger:
-    image: swaggerapi/swagger-ui
-    container_name: swaggerapi
-    hostname: swagger
-    expose:
-      - 8080
-    ports:
-      - 8001:8080
-    environment:
-      - API_URL=/swagger.json
-    restart: always
-    volumes: ["./Specification/specification.json:/usr/share/nginx/html/swagger.json"]
 
 #postgres
   postgres:

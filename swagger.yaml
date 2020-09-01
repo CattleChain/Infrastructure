@@ -1,0 +1,16 @@
+version: '3.5'
+services:    
+# swagger client
+  swagger:
+    image: swaggerapi/swagger-ui
+    container_name: swaggerapi
+    hostname: swagger
+    expose:
+      - 8080
+    ports:
+      - 8001:8080
+    environment:
+      - API_URL=/swagger.json
+    restart: always
+    volumes: ["./specs/specification.json:/usr/share/nginx/html/swagger.json"]
+
