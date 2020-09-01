@@ -1,0 +1,7 @@
+# Cattlechain Transaction Processor
+cattlechain-tp:
+    image: singhhp10691/cattlechain_tp
+    environment:
+      - VALIDATOR_URL=tcp://validator:4004
+      - TP_FAMILY='CattleChain'
+      - TP_VERSION='0.0.2'
