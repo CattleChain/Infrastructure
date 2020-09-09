@@ -1,0 +1,137 @@
+version: '3.5'
+services:      
+# context broker service
+  orion:
+    image: fiware/orion:2.4.0
+    hostname: orion
+    container_name: fiware-orion
+    depends_on:
+      - mongo-db
+    expose:
+      - "1026"
+    ports:
+      - "1026:1026" 
+    command: -dbhost mongo-db -logLevel DEBUG
+    entrypoint: ["/usr/bin/contextBroker","-fg", "-multiservice", "-ngsiv1Autocast", "-corsOrigin='__ALL'" ]
+    healthcheck:
+      test: curl --fail -s http://orion:1026/version || exit 1
+  
+# Database
+  mongo-db:
+    image: mongo:3.6
+    hostname: mongo-db
+    container_name: db-mongo
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017" # localhost:27017
+    command: --bind_ip_all --smallfiles
+    volumes:
+      - mongo-db:/data
+
+#postgres
+  postgres:
+    image: postgres
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=cattlechain
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+
+# cattlechain client
+  cattlechain-client:
+    container_name: cattlechain_client
+    image: singhhp10691/tp_client:latest
+    expose:
+      - 3000
+    ports:
+      - '3000:3000'
+    environment:
+      - SAWTOOTH_REST_ENDPOINT=http://rest-api:8008
+      - TP_FAMILY=CattleChain
+      - TP_VERSION=0.0.2
+      - TP_NAMESPACE=ebc4f9
+      - DB_NAME=cattlechain
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_SYNC=true
+      - DB_DIALECT=postgres
+    depends_on:
+      - cattlechain-tp
+      - rest-api
+      - postgres
+
+# Cattlechain Transaction Processor
+  cattlechain-tp:
+   container_name: cattlechain_tp
+   image: singhhp10691/cattlechain_tp:latest
+   environment:
+     VALIDATOR_URL: tcp://validator:4004
+   depends_on:
+     - validator
+
+#  setting transaciton processor
+  settings-tp:
+    image: hyperledger/sawtooth-settings-tp:1.2
+    container_name: sawtooth-settings-tp
+    depends_on:
+      - validator
+    entrypoint: settings-tp -vv -C tcp://validator:4004
+
+# sawtooth rest API
+  rest-api:
+    image: hyperledger/sawtooth-rest-api:1.2
+    container_name: sawtooth-rest-api
+    expose:
+      - 8008
+    ports:
+      - '8008:8008'
+    depends_on:
+      - validator
+    entrypoint: sawtooth-rest-api -vv -C tcp://validator:4004 --bind rest-api:8008
+
+# sawtooth validator node
+  validator:
+    image: hyperledger/sawtooth-validator:1.2
+    container_name: sawtooth-validator
+    expose:
+      - 4004
+    ports:
+      - '4004:4004'
+    command: |
+      bash -c "
+        if [ ! -f /etc/sawtooth/keys/validator.priv ]; then
+          sawadm keygen
+          sawtooth keygen my_key
+          sawset genesis -k /root/.sawtooth/keys/my_key.priv
+          sawset proposal create -k /root/.sawtooth/keys/my_key.priv \
+            sawtooth.consensus.algorithm.name=Devmode \
+            sawtooth.consensus.algorithm.version=0.1 \
+            -o config.batch
+          sawadm genesis config-genesis.batch config.batch
+        fi;
+        sawtooth-validator -vv \
+          --endpoint tcp://validator:8800 \
+          --bind component:tcp://eth0:4004 \
+          --bind network:tcp://eth0:8800 \
+          --bind consensus:tcp://eth0:5050
+      "
+# devmode consensus
+  devmode-engine:
+    image: hyperledger/sawtooth-devmode-engine-rust:1.2
+    expose:
+      - 5050
+    ports:
+      - '5050:5050'
+    container_name: sawtooth-devmode-engine-rust-default
+    depends_on:
+      - validator
+    entrypoint: devmode-engine-rust --connect tcp://validator:5050
+
+#  volumes 
+volumes:
+  mongo-db: ~
