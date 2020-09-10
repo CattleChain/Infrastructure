@@ -71,17 +71,6 @@ services:
     volumes:
       - mongo-db:/data
 
-#postgres
-  postgres:
-    image: postgres
-    container_name: postgres
-    ports:
-      - '5432:5432'
-    environment:
-      - POSTGRES_DB=cattlechain
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=root
-
 # cattlechain client
   cattlechain-client:
     container_name: cattlechain_client
@@ -106,6 +95,19 @@ services:
       - cattlechain-tp
       - rest-api
       - postgres
+    links: 
+      - postgres
+
+#postgres
+  postgres:
+    image: postgres
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=cattlechain
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
 
 # Cattlechain Transaction Processor
   cattlechain-tp:
